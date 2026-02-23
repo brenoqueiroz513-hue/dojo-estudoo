@@ -1,1 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estimo Dojo</title>
 
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#000;
+  color:#fff;
+  text-align:center;
+}
+.container{
+  padding:20px;
+}
+button{
+  background:yellow;
+  border:none;
+  padding:10px 20px;
+  margin:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+input{
+  padding:8px;
+  margin:5px;
+}
+.hidden{display:none;}
+.belt{
+  width:120px;
+  height:20px;
+  margin:15px auto;
+}
+.sensei{
+  width:150px;
+  height:200px;
+  margin:20px auto;
+  background:#111;
+  border-radius:50% 50% 0 0;
+  position:relative;
+}
+.sensei::after{
+  content:"";
+  position:absolute;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:100px;
+  height:15px;
+  background:var(--belt-color,white);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="login">
+<h1>ESTIMO DOJO</h1>
+<input type="text" id="name" placeholder="Seu nome"><br>
+<input type="text" id="region" placeholder="Sua cidade/região"><br>
+<button onclick="startGame()">Entrar</button>
+</div>
+
+<div class="container hidden" id="game">
+<h2 id="beltTitle"></h2>
+<p id="question"></p>
+<div id="answers"></div>
+<p>Erros: <span id="errors">0</span>/3</p>
+</div>
+
+<div class="container hidden" id="result">
+<h2 id="resultText"></h2>
+<div class="sensei"></div>
+<button onclick="nextBelt()">Próxima Faixa</button>
+</div>
+
+<script>
+
+const belts = [
+{nome:"Branca", cor:"white"},
+{nome:"Amarela", cor:"yellow"},
+{nome:"Roxa", cor:"purple"},
+{nome:"Preta", cor:"black"}
+];
+
+let currentBelt = 0;
+let questionIndex = 0;
+let errors = 0;
+let player = {};
+
+const questions = [
+{q:"O que significa ippon no judô?", a:["Ponto completo","Saudação","Golpe fraco"], c:0},
+{q:"Quem criou o judô?", a:["Miyamoto","Jigoro Kano","Bruce Lee"], c:1},
+{q:"Qual é a saudação tradicional?", a:["Rei","Oi","Salve"], c:0},
+{q:"Judô significa:", a:["Caminho suave","Arte dura","Luta rápida"], c:0},
+{q:"Quantos erros eliminam?", a:["1","2","3"], c:2}
+];
+
+function startGame(){
+  const name = document.getElementById("name").value;
+  const region = document.getElementById("region").value;
+  if(!name || !region) return alert("Preencha tudo");
+
+  player = {name, region, belt:0};
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+  loadQuestion();
+}
+
+function loadQuestion(){
+  document.getElementById("beltTitle").innerText = "Faixa " + belts[currentBelt].nome;
+  const q = questions[questionIndex % questions.length];
+  document.getElementById("question").innerText = q.q;
+  const answersDiv = document.getElementById("answers");
+  answersDiv.innerHTML="";
+  q.a.forEach((ans,i)=>{
+    const btn=document.createElement("button");
+    btn.innerText=ans;
+    btn.onclick=()=>checkAnswer(i);
+    answersDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(i){
+  const correct = questions[questionIndex % questions.length].c;
+  if(i===correct){
+    questionIndex++;
+    if(questionIndex>=5){
+      showResult();
+    }else{
+      loadQuestion();
+    }
+  }else{
+    errors++;
+    document.getElementById("errors").innerText=errors;
+    if(errors>=3){
+      alert("Você falhou! Reiniciando faixa.");
+      questionIndex=0;
+      errors=0;
+      document.getElementById("errors").innerText=0;
+    }
+  }
+}
+
+function showResult(){
+  document.getElementById("game").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+  document.getElementById("resultText").innerText="Sensei entregou a faixa "+belts[currentBelt].nome+"!";
+  document.querySelector(".sensei").style.setProperty("--belt-color", belts[currentBelt].cor);
+  saveRanking();
+}
+
+function nextBelt(){
+  currentBelt++;
+  if(currentBelt>=belts.length){
+    alert("Você virou Mestre!");
+    location.reload();
+  }
+  questionIndex=0;
+  errors=0;
+  document.getElementById("errors").innerText=0;
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+  loadQuestion();
+}
+
+function saveRanking(){
+  let ranking = JSON.parse(localStorage.getItem("ranking")||"[]");
+  ranking.push(player);
+  localStorage.setItem("ranking", JSON.stringify(ranking));
+}
+
+</script>
+
+</body>
+  </html>
